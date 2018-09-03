@@ -7,7 +7,7 @@
 .build/
 assets/
 .vscode/
-
+SanityAquifer
 # Compiled Object files
 *.slo
 *.lo

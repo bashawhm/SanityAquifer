@@ -38,4 +38,8 @@ private:
 
 	i32 targetX;
 	i32 targetY;
+	i32 dx;
+	i32 dy;
+	f32 originX;
+	f32 originY;
 };

@@ -1,5 +1,5 @@
 CC = clang++
-CFLAGS += -pipe -std=c++17 -march=native -Wall -Wextra -O3 -g `sdl2-config --cflags`
+CFLAGS += -pipe -std=c++17 -g -march=native -Wall -Wextra -O3 -g `sdl2-config --cflags`
 LDFLAGS += `sdl2-config --libs` -lSDL2_ttf -lSDL2_image -lSDL2_mixer 
 
 TARGET := SanityAquifer

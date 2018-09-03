@@ -26,6 +26,8 @@ Stage::Stage() {
 
 	mainMenu = new Menu(renderer, winWidth, winHeight, "assets/selectorback.jpg");
 	advent = new Adventure(renderer, winWidth, winHeight, 0, "assets/aquarium1.jpg", this);
+
+	// cerr << "width: " << winWidth << " height: " << winHeight << endl;
 }
 
 Stage::Stage(u32 width, u32 height) {

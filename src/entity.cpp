@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <sys/time.h>
+#include <cmath>
 
 #include "type.h"
 #include "entity.h"
@@ -13,8 +14,10 @@
 
 using namespace std;
 
-#define XSPEED 10
-#define YSPEED 10
+#define MAXXSPEED 5
+#define MAXYSPEED 5
+#define DELTAX 1
+#define DELTAY 1
 
 
 Entity::Entity(EntityType eType, DropType eDropType, const vector<EntityType> &eMeals, Stage *eStage) {
@@ -33,8 +36,14 @@ Entity::Entity(EntityType eType, DropType eDropType, const vector<EntityType> &e
 
 	hitBox -> x = (rand() % stage -> winWidth);
 	hitBox -> y = (rand() % stage -> winHeight);
+	originX = hitBox -> x;
+	originY = hitBox -> y;
 	targetX = (rand() % stage -> winWidth);
 	targetY = (rand() % stage -> winHeight);
+	// cerr << "Ending Target (x,y): (" << targetX << "," << targetY << ")" << endl;
+	
+	dx = 0;
+	dy = 0;
 
 	if (type == Fish || type == Breeder) {
 		growthThreshold = 10;
@@ -90,46 +99,79 @@ bool Entity::ageUp() {
 }
 
 void Entity::render() {
-	// cerr << this << endl;
 	struct timeval tNow;
 	gettimeofday(&tNow, NULL);
 	u64 now = ((tNow.tv_sec * 1000UL) + (tNow.tv_usec / 1000UL));
 	// Can I do this? lol
-	if ((now - lastRender) % 50 > 40) {
+	// cerr << (now - start) % 10000 << endl;
+	if ((now - start) % 100 > 75) {
 		lastRender = now;
 		//TODO: Move fish around, have eat, have grow, etc...
 
-		// cerr << "Target (x,y): (" << targetX << "," << targetY << ")" << endl;
-
-		// cerr << "hitbox: " << hitBox -> x << " target: " << targetX << endl;
-		if ((hitBox -> x != targetX || (hitBox -> x - targetX) > XSPEED) && (hitBox -> y != targetY || (hitBox -> y - targetY) > YSPEED)) {
-			if (targetX > hitBox -> x && targetY > hitBox -> y) {
-				hitBox -> x += XSPEED;
-				hitBox -> y += YSPEED;
-			} else if (targetX > hitBox -> x && targetY < hitBox -> y) {
-				hitBox -> y -= YSPEED;
-				hitBox -> x += XSPEED;
-			} else if (targetX < hitBox -> x && targetY < hitBox -> y) {
-				hitBox -> x -= XSPEED;
-				hitBox -> y -= YSPEED;
-			} else if (targetX < hitBox -> x && targetY > hitBox -> y) {
-				hitBox -> y += YSPEED;
-				hitBox -> x -= XSPEED;
-			} else if (targetX > hitBox -> x) {
-				hitBox -> x += XSPEED;
-			} else if (targetY > hitBox -> y) {
-				hitBox -> y += YSPEED;
-			} else if (targetX < hitBox -> x) {
-				hitBox -> x -= XSPEED;
-			} else if (targetY < hitBox -> y) {
-				hitBox -> y -= YSPEED;
-			} else {
-				cerr << "Failed to target" << endl;
+		if (abs(hitBox -> x - targetX) > MAXXSPEED || abs(hitBox -> y - targetY) > MAXYSPEED) {
+			// cerr << "hitbox: " << hitBox -> x << " target: " << targetX << endl;
+			if ((hitBox -> x != targetX && abs(hitBox -> x - targetX) > MAXXSPEED) || (hitBox -> y != targetY && abs(hitBox -> y - targetY) > MAXYSPEED)) {
+				//If accelarating
+				if (abs(targetX - hitBox -> x) >= (abs(targetX - originX) / 3) || abs(targetY - hitBox -> y) >= (abs(targetY - originY) / 3)) {
+					// cerr << "positive" << endl;
+					if (dx == 0) {
+						dx = DELTAX;
+					} else if (((targetX - hitBox -> x) / dx) == 0) {
+						dx = DELTAX;
+					} else if (dy == 0) {
+						dy = DELTAY;
+					} else if (((targetY - hitBox -> y) / dy) == 0) {
+						dy = DELTAY;
+					} else {
+						if ((dx * ((targetX - hitBox -> x) / dx)) < MAXXSPEED) {
+							dx = (dx * ((targetX - hitBox -> x) / abs(dx)));
+						} else {
+							dx = MAXXSPEED;
+						}
+						if ((dy * ((targetY - hitBox -> y) / dy)) < MAXYSPEED) {
+							dy = (dy * ((targetY - hitBox -> y) / abs(dy)));
+						} else {
+							dy = MAXYSPEED;
+						}
+					}
+				} else {
+					// cerr << "negative" << endl;
+					if (dx == 0) {
+						dx = DELTAX;
+					} else if (((targetX - hitBox -> x) / dx) == 0) {
+						dx = DELTAX;
+					} else if (dy == 0) {
+						dy = DELTAY;
+					} else if (((targetY - hitBox -> y) / dy) == 0) {
+						dy = DELTAY;
+					} else {
+						if ((dx / ((targetX - hitBox -> x) / dx)) < (0 - MAXXSPEED)) {
+							dx = (dx / ((targetX - hitBox -> x) / abs(dx)));
+						} else {
+							dx = (0 - MAXXSPEED);
+						}
+						if ((dy / ((targetY - hitBox -> y) / dy)) < (0 - MAXYSPEED)) {
+							dy = (dy / ((targetY - hitBox -> y) / abs(dy)));
+						} else {
+							dy = (0 - MAXYSPEED);
+						}
+					}
+				}
+				//Submit speed
+				// cerr << "dx: " << dx << " dy: " << dy << endl;
+				hitBox -> x += dx;
+				hitBox -> y += dy;
 			}
-		} else {
-			targetX = (rand() % stage -> winWidth);
-			targetY = (rand() % stage -> winHeight);
-			cerr << "Ending Target (x,y): (" << targetX << "," << targetY << ")" << endl;
+		} 
+		
+		if ((now - start) % 10000 > 9980) {
+			// cerr << "hitbox: " << hitBox -> x << " hitbox y: " << hitBox -> y << endl;
+			targetX = (rand() % (stage -> winWidth - (stage -> winWidth / 16))) + (stage -> winWidth / 16);
+			targetY = (rand() % (stage -> winHeight - (stage -> winHeight / 16))) + (stage -> winHeight / 16);
+			originX = hitBox -> x;
+			originY = hitBox -> y;
+			// cerr << "hitbox x: " << hitBox -> x << " hitbox y: " << hitBox -> y << endl;
+			// cerr << "Ending Target (x,y): (" << targetX << "," << targetY << ")" << endl;
 		}
 		ani -> nextFrame();
 	}
